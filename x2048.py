@@ -131,13 +131,7 @@ from tkinter import *
 from tkinter import messagebox
 
 
-def main():
-    g = game(4, 4)
-    g.reset()
-
-    root = Tk()
-    root.title('2048游戏')
-    root.resizable(width=False, height=False)
+class Screen:
 
     game_bg_color = "#bbada0"  # 设置背景颜色
 
@@ -166,69 +160,87 @@ def main():
         2 ** 20: ("#b06ca8", "#f9f6f2"),
     }
 
-    def on_key_down(event):
+    def __init__(self, g=game(4, 4), title='2048游戏'):
+        self.g = g
+        self.root = Tk()
+        self.root.title(title)
+        self.root.resizable(width=False, height=False)
+        self.draw_frame()
+        self.draw_labels_map()
+        self.draw_score_label()
+
+    def draw_frame(self):
+        self.frame = Frame(self.root, bg=self.game_bg_color)
+        self.frame.grid(sticky=N + E + W + E)
+        self.frame.focus_set()
+
+    def draw_labels_map(self):
+        map_labels = []
+        for i in range(self.g.height):
+            row = []
+            for j in range(self.g.width):
+                value = self.g.field[i][j]
+                text = str(value)
+                label = Label(self.frame, text=text, width=4, height=2,
+                              font=("黑体", 30, "bold"))
+                label.grid(row=i, column=j, padx=5, pady=5, sticky=N + E + W + E)
+                row.append(label)
+            map_labels.append(row)
+        self.map_labels = map_labels
+
+    def draw_score_label(self):
+        label = Label(self.frame, text='分数', font=("黑体", 30, "bold"),
+                      bg="#bbada0", fg="#eee4da")
+        label.grid(row=4, column=0, padx=5, pady=5)
+        label_score = Label(self.frame, text='0', font=("黑体", 30, "bold"),
+                            bg="#bbada0", fg="#ffffff")
+        label_score.grid(row=4, columnspan=2, column=1, padx=5, pady=5)
+        self.label_score = label_score
+
+    def draw_restart(self):
+        self.restart_button = Button(self.frame, text='重新开始', font=("黑体", 16, "bold"),
+                                bg="#8f7a66", fg="#f9f6f2", command=self.reset_game)
+        self.restart_button.grid(row=4, column=3, padx=5, pady=5)
+
+    def run(self):
+        self.frame.bind("<Key>", self.on_key_down)
+
+        self.update_ui()  # 更新界面
+        self.root.mainloop()  # 进入tkinter主事件循环
+
+    def reset_game(self):
+        self.g.reset()
+        self.update_ui()
+
+    def on_key_down(self, event):
         keysym = event.keysym
         if keysym in actions:
-            if g.move(keysym):
-                g.fill2(g.field)
-        update_ui()
-        if g.is_gameover():
+            self.g.move(keysym)
+        self.update_ui()
+        if self.g.is_gameover():
             mb = messagebox.askyesno(
                 title="gameover", message='游戏结束，是否退出游戏'
             )
             if mb:
-                root.quit()
+                self.root.quit()
             else:
-                g.reset()
-                update_ui()
+                self.g.reset()
+                self.update_ui()
 
-    def update_ui():
-        for i in range(g.height):
-            for j in range(g.width):
-                number = g.field[i][j]
-                label = map_labels[i][j]
+    def update_ui(self):
+        for i in range(self.g.height):
+            for j in range(self.g.width):
+                number = self.g.field[i][j]
+                label = self.map_labels[i][j]
                 label['text'] = str(number)
-                label['bg'] = mapcolor[number][0]
-                label['foreground'] = mapcolor[number][1]
-        label_score['text'] = str(g.get_score())
+                label['bg'] = self.mapcolor[number][0]
+                label['foreground'] = self.mapcolor[number][1]
+        self.label_score['text'] = str(self.g.get_score())
 
-    frame = Frame(root, bg=game_bg_color)
-    frame.grid(sticky=N + E+ W + E)
+g = game(4,4)
+s = Screen(g=g)
+s.run()
 
-    frame.focus_set()
-    frame.bind("<Key>", on_key_down)
-
-    map_labels = []
-    for i in range(g.height):
-        row = []
-        for j in range(g.width):
-            value = g.field[i][j]
-            text = str(value)
-            label = Label(frame, text=text, width=4, height=2,
-                          font=("黑体", 30, "bold"))
-            label.grid(row=i, column=j, padx=5, pady=5, sticky=N + E + W + E)
-            row.append(label)
-        map_labels.append(row)
-
-    label = Label(frame, text='分数', font=("黑体", 30, "bold"),
-                  bg="#bbada0", fg="#eee4da")
-    label.grid(row=4, column=0, padx=5, pady=5)
-    label_score = Label(frame, text='0', font=("黑体", 30, "bold"),
-                        bg="#bbada0", fg="#ffffff")
-    label_score.grid(row=4, columnspan=2, column=1, padx=5, pady=5)
-
-    def reset_game():
-        g.reset()
-        update_ui()
-
-    restart_button = Button(frame, text='重新开始', font=("黑体", 16, "bold"),
-                            bg="#8f7a66", fg="#f9f6f2", command=reset_game)
-    restart_button.grid(row=4, column=3, padx=5, pady=5)
-
-    update_ui()  # 更新界面
-
-    root.mainloop()  # 进入tkinter主事件循环
-main()
 
 
 
